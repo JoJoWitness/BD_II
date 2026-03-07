@@ -17,15 +17,59 @@ WHERE e.officeCode = '1';
 SELECT c.customerName, SUM(p.amount) 
 FROM customers AS c
 JOIN payments AS p ON  c.customerNumber = p.customerNumber
-WHERE DATEDIFF(p.customerDate, 
-    (SELECT EXTRACT(MONTH FROM p.paymentDate), EXTRACT(YEAR FROM p.paymentDate)
-    FROM payments AS p
-    ORDER BY p.paymentDate DESC
-    LIMIT 1)
-    ) <=3
+WHERE p.paymentDate >= (
+    SELECT MAX(p.paymentDate) - INTERVAL 3 MONTH
+    FROM payments AS p)
 GROUP BY c.customerName
 ORDER BY SUM(p.amount)DESC;
 
-SELECT 
+--top 3 de productos mas vendidos por linea de producto
+WITH CTE AS (
+    SELECT  pl.productLine, p.productName, SUM(od.quantityOrdered),
+    ROW_NUMBER() OVER (
+        PARTITION BY pl.productLine
+        ORDER BY SUM(od.quantityOrdered) DESC) AS row_num
+    FROM productlines AS pl
+    JOIN products AS p ON pl.productLine = p.productLine
+    JOIN orderdetails AS od ON p.productCode = od.productCode
+    GROUP BY pl.productLine, p.productName
+    )
+SELECT * FROM CTE WHERE row_num <= 3;
 
-SELECT * from payments;
+--Dia que se realizo mas ventas en un mes dado por teclado
+
+DELIMITER//
+    CREATE PROCEDURE getTopSellingDayOfAMonth()
+    @Month int
+    BEGIN
+        SELECT p.paymentDate, SUM(p.amount), COUNT(o.orderNumber)
+        FROM payments AS p
+        JOIN customers AS c ON p.customerNUmber = c.customerNumber
+        JOIN orders AS o ON c.customerNumber = o.customerNumber
+        WHERE EXTRACT(MONTH FROM p.paymentDate) = @Month
+        GROUP BY p.paymentDATE
+        ORDER BY COUNT(o.orderNumber) DESC
+        LIMIT 1;
+    END 
+DELIMITER;
+
+  DELIMITER //
+  CREATE PROCEDURE getTopSellingDayOfAMonth(IN v_month INT)
+  BEGIN
+      SELECT p.paymentDate, SUM(p.amount) AS Gross_Profits, COUNT(o.orderNumber) AS Total_Orders
+      FROM payments AS p
+      JOIN customers AS c ON p.customerNumber = c.customerNumber
+      JOIN orders AS o ON c.customerNumber = o.customerNumber
+      WHERE EXTRACT(MONTH FROM p.paymentDate) = v_month
+      GROUP BY p.paymentDate
+      ORDER BY COUNT(o.orderNumber) DESC
+      LIMIT 1;
+  END //
+  DELIMITER ;
+
+SELECT p.paymentDate, SUM(p.amount) AS Gross_Profits, COUNT(o.orderNumber) AS Total_Orders
+FROM payments AS p
+JOIN customers AS c ON p.customerNumber = c.customerNumber
+JOIN orders AS o ON c.customerNumber = o.customerNumber
+GROUP BY p.paymentDate
+ORDER BY COUNT(o.orderNumber) DESC
