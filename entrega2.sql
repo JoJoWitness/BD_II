@@ -37,39 +37,27 @@ WITH CTE AS (
 SELECT * FROM CTE WHERE row_num <= 3;
 
 --Dia que se realizo mas ventas en un mes dado por teclado
-
-DELIMITER//
-    CREATE PROCEDURE getTopSellingDayOfAMonth()
-    @Month int
+DELIMITER //
+    CREATE PROCEDURE getTopSellingDayOfAMonth(IN v_month INT)
     BEGIN
-        SELECT p.paymentDate, SUM(p.amount), COUNT(o.orderNumber)
+        SELECT p.paymentDate AS Date, SUM(p.amount) AS Gross_Profits, COUNT(o.orderNumber) AS Total_Orders
         FROM payments AS p
-        JOIN customers AS c ON p.customerNUmber = c.customerNumber
+        JOIN customers AS c ON p.customerNumber = c.customerNumber
         JOIN orders AS o ON c.customerNumber = o.customerNumber
-        WHERE EXTRACT(MONTH FROM p.paymentDate) = @Month
-        GROUP BY p.paymentDATE
+        WHERE EXTRACT(MONTH FROM p.paymentDate) = v_month
+        GROUP BY p.paymentDate
         ORDER BY COUNT(o.orderNumber) DESC
         LIMIT 1;
-    END 
-DELIMITER;
+    END //
+DELIMITER ;
 
-  DELIMITER //
-  CREATE PROCEDURE getTopSellingDayOfAMonth(IN v_month INT)
-  BEGIN
-      SELECT p.paymentDate, SUM(p.amount) AS Gross_Profits, COUNT(o.orderNumber) AS Total_Orders
-      FROM payments AS p
-      JOIN customers AS c ON p.customerNumber = c.customerNumber
-      JOIN orders AS o ON c.customerNumber = o.customerNumber
-      WHERE EXTRACT(MONTH FROM p.paymentDate) = v_month
-      GROUP BY p.paymentDate
-      ORDER BY COUNT(o.orderNumber) DESC
-      LIMIT 1;
-  END //
-  DELIMITER ;
+--Cantidad de personas que compran en una misma ciudad por mes
+SELECT o.city AS city, DATE_FORMAT(p.paymentDate, "%y-%m") as Sales_Month, COUNT(DISTINCT c.customerNumber) AS Total_Clients
+FROM offices AS o
+JOIN employees AS e ON o.officeCode = e.officeCode
+JOIN customers AS c on e.employeeNumber = c.salesRepEmployeeNumber
+JOIN payments AS p on c.customerNumber = p.customerNumber
+GROUP BY city, Sales_Month
+Order BY city, Sales_MOnth DESC;
 
-SELECT p.paymentDate, SUM(p.amount) AS Gross_Profits, COUNT(o.orderNumber) AS Total_Orders
-FROM payments AS p
-JOIN customers AS c ON p.customerNumber = c.customerNumber
-JOIN orders AS o ON c.customerNumber = o.customerNumber
-GROUP BY p.paymentDate
-ORDER BY COUNT(o.orderNumber) DESC
+
