@@ -1,6 +1,6 @@
 USE classicmodels;
 
--- Total cobrado por cliente
+--Total cobrado por cliente
 
 SELECT c.customerName, SUM(p.amount) 
 FROM customers AS c
@@ -10,7 +10,7 @@ GROUP BY c.customerName;
 --Empleado gestionador de una oficiana especifica
 SELECT e.firstName, e.lastName, e.email, e.extension, e.jobTitle
 FROM employees AS e
-WHERE e.officeCode = '1'; 
+WHERE e.officeCode = '7'; 
 
 -- clientes que mas han gastado en los ultimos 3 meses
 
@@ -40,7 +40,7 @@ SELECT * FROM CTE WHERE row_num <= 3;
 DELIMITER //
     CREATE PROCEDURE getTopSellingDayOfAMonth(IN v_month INT)
     BEGIN
-        SELECT p.paymentDate AS Date, SUM(p.amount) AS Gross_Profits, COUNT(o.orderNumber) AS Total_Orders
+        SELECT p.paymentDate AS Date, SUM(p.amount) AS Gross_Profits, COUNT(DISTINCT o.orderNumber) AS Total_Orders
         FROM payments AS p
         JOIN customers AS c ON p.customerNumber = c.customerNumber
         JOIN orders AS o ON c.customerNumber = o.customerNumber
@@ -50,6 +50,8 @@ DELIMITER //
         LIMIT 1;
     END //
 DELIMITER ;
+
+DROP PROCEDURE getTopSellingDayOfAMonthÑ
 
 --Cantidad de personas que compran en una misma ciudad por mes
 SELECT o.city AS city, DATE_FORMAT(p.paymentDate, "%y-%m") as Sales_Month, COUNT(DISTINCT c.customerNumber) AS Total_Clients
