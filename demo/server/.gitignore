@@ -1,0 +1,14 @@
+.env
+.env.local
+
+# Binarios de Go
+demo
+server
+*.exe
+*.out
+*.test
+
+.DS_Store
+.vscode/
+.idea/
+*.swp

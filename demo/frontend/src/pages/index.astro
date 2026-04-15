@@ -1,0 +1,167 @@
+---
+import '../styles/global.css';
+
+const apiUrl = 'http://localhost:8080';
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo Logs de Sesión</title>
+</head>
+<body>
+
+<div id="login-view" class="login-wrapper">
+  <div class="card">
+    <h1>Iniciar sesión</h1>
+    <form id="login-form">
+      <label for="username">Nombre de usuario</label>
+      <input type="text" id="username" name="username" autocomplete="off" required />
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" name="password" required />
+      <button type="submit">Entrar</button>
+    </form>
+    <div id="login-error" class="error"></div>
+  </div>
+</div>
+
+<div id="dashboard-view" class="dashboard hidden">
+  <h1>Historial de accesos</h1>
+  <div class="greeting">Hola, <span id="greeting-name"></span></div>
+  <div class="toolbar">
+    <button id="refresh-btn">Actualizar</button>
+    <button id="logout-btn" class="secondary">Salir</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tipo de evento</th>
+        <th>Fecha y hora</th>
+      </tr>
+    </thead>
+    <tbody id="logs-body"></tbody>
+  </table>
+  <div id="logs-empty" class="empty hidden">Sin registros.</div>
+</div>
+
+<script define:vars={{ API_URL: apiUrl }}>
+  const loginView = document.getElementById('login-view');
+  const dashboardView = document.getElementById('dashboard-view');
+  const loginForm = document.getElementById('login-form');
+  const loginError = document.getElementById('login-error');
+  const greetingName = document.getElementById('greeting-name');
+  const logsBody = document.getElementById('logs-body');
+  const logsEmpty = document.getElementById('logs-empty');
+  const refreshBtn = document.getElementById('refresh-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+
+  function showLogin() {
+    dashboardView.classList.add('hidden');
+    loginView.classList.remove('hidden');
+    loginError.style.display = 'none';
+    loginError.textContent = '';
+    loginForm.reset();
+  }
+
+  function showDashboard(username) {
+    loginView.classList.add('hidden');
+    dashboardView.classList.remove('hidden');
+    greetingName.textContent = username;
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleString();
+  }
+
+  async function loadLogs() {
+    const userId = localStorage.getItem('user_id');
+    if (!userId) { showLogin(); return; }
+    try {
+      const res = await fetch(API_URL + '/api/logs?user_id=' + encodeURIComponent(userId));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const logs = await res.json();
+      logsBody.innerHTML = '';
+      if (!logs.length) {
+        logsEmpty.classList.remove('hidden');
+        return;
+      }
+      logsEmpty.classList.add('hidden');
+      for (const log of logs) {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + log.id + '</td>' +
+          '<td>' + log.event_type + '</td>' +
+          '<td>' + formatTime(log.event_time) + '</td>';
+        logsBody.appendChild(tr);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginError.style.display = 'none';
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    try {
+      const res = await fetch(API_URL + '/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        loginError.textContent = data.error || 'Error al iniciar sesión';
+        loginError.style.display = 'block';
+        return;
+      }
+      localStorage.setItem('user_id', String(data.user_id));
+      localStorage.setItem('username', data.username);
+      showDashboard(data.username);
+      await loadLogs();
+    } catch (err) {
+      loginError.textContent = 'Error de red';
+      loginError.style.display = 'block';
+    }
+  });
+
+  refreshBtn.addEventListener('click', loadLogs);
+
+  logoutBtn.addEventListener('click', async () => {
+    const userId = localStorage.getItem('user_id');
+    if (userId) {
+      try {
+        await fetch(API_URL + '/api/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: Number(userId) }),
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('username');
+    showLogin();
+  });
+
+  (function init() {
+    const userId = localStorage.getItem('user_id');
+    const username = localStorage.getItem('username');
+    if (userId && username) {
+      showDashboard(username);
+      loadLogs();
+    } else {
+      showLogin();
+    }
+  })();
+</script>
+
+</body>
+</html>
