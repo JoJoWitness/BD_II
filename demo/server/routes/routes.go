@@ -7,7 +7,8 @@ import (
 )
 
 func Register(mux *http.ServeMux) {
-	mux.HandleFunc("/api/login", controllers.Login)
-	mux.HandleFunc("/api/logs", controllers.Logs)
-	mux.HandleFunc("/api/logout", controllers.Logout)
+	mux.HandleFunc("GET /phrase", controllers.GetPhrase)
+	mux.HandleFunc("GET /phrases", controllers.ListPhrases)
+	mux.HandleFunc("POST /phrase", controllers.AddPhrase)
+	mux.HandleFunc("DELETE /phrase", controllers.DeletePhrase)
 }

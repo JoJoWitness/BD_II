@@ -12,7 +12,6 @@ import (
 var DB *sql.DB
 
 func Connect() error {
-	// Carga .env si existe; si no, usa variables de entorno ya exportadas.
 	_ = godotenv.Load()
 
 	dsn := os.Getenv("DATABASE_URL")
