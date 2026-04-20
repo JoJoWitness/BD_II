@@ -2,30 +2,30 @@ USE classicmodels;
 
 --Total cobrado por cliente
 
-SELECT c.customerName, SUM(p.amount) 
+SELECT c.customerName AS Customer, SUM(p.amount) as Total_Amount
 FROM customers AS c
 JOIN payments AS p ON  c.customerNumber = p.customerNumber
 GROUP BY c.customerName;
 
 --Empleado gestionador de una oficiana especifica
-SELECT e.firstName, e.lastName, e.email, e.extension, e.jobTitle
+SELECT e.firstName AS name, e.lastName as Last_Name, e.email as Email, e.extension AS Extension, e.jobTitle AS Role
 FROM employees AS e
 WHERE e.officeCode = '7'; 
 
 -- clientes que mas han gastado en los ultimos 3 meses
 
-SELECT c.customerName, SUM(p.amount) 
+SELECT c.customerName AS Customer, SUM(p.amount) AS Total_Amount 
 FROM customers AS c
 JOIN payments AS p ON  c.customerNumber = p.customerNumber
 WHERE p.paymentDate >= (
     SELECT MAX(p.paymentDate) - INTERVAL 3 MONTH
     FROM payments AS p)
 GROUP BY c.customerName
-ORDER BY SUM(p.amount)DESC;
+ORDER BY SUM(p.amount) DESC;
 
 --top 3 de productos mas vendidos por linea de producto
 WITH CTE AS (
-    SELECT  pl.productLine, p.productName, SUM(od.quantityOrdered),
+    SELECT  pl.productLine AS Product_Line, p.productName AS Product_Name, SUM(od.quantityOrdered) AS Quantity_Ordered,
     ROW_NUMBER() OVER (
         PARTITION BY pl.productLine
         ORDER BY SUM(od.quantityOrdered) DESC) AS row_num
@@ -34,7 +34,7 @@ WITH CTE AS (
     JOIN orderdetails AS od ON p.productCode = od.productCode
     GROUP BY pl.productLine, p.productName
     )
-SELECT * FROM CTE WHERE row_num <= 3;
+SELECT  pl.productLine AS Product_Line, p.productName AS Product_Name, SUM(od.quantityOrdered) AS Quantity_Ordered, FROM CTE WHERE row_num <= 3;
 
 --Dia que se realizo mas ventas en un mes dado por teclado
 DELIMITER //
@@ -51,7 +51,7 @@ DELIMITER //
     END //
 DELIMITER ;
 
-DROP PROCEDURE getTopSellingDayOfAMonthÑ
+DROP PROCEDURE getTopSellingDayOfAMonth;
 
 --Cantidad de personas que compran en una misma ciudad por mes
 SELECT o.city AS city, DATE_FORMAT(p.paymentDate, "%y-%m") as Sales_Month, COUNT(DISTINCT c.customerNumber) AS Total_Clients
